@@ -1,0 +1,283 @@
+{
+	"info": {
+		"_postman_id": "283819f8-cf06-4821-9b64-df76b90a0ce0",
+		"name": "AIR-TIME",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "25567270"
+	},
+	"item": [
+		{
+			"name": "card",
+			"item": [
+				{
+					"name": "cards",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "telegram_user_id",
+								"value": "1",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[\r\n    {\r\n        \"cardNumber\": \"1234778566789\",\r\n        \"cardPrice\": 500,\r\n        \"cardType\": \"Safaricom\"\r\n    },\r\n    {\r\n        \"cardNumber\": \"12346906796790\",\r\n        \"cardPrice\": 100,\r\n        \"cardType\": \"Ethio-Telecom\"\r\n    }\r\n]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://cardapi.zowibot.com/api/v1/cards",
+							"protocol": "https",
+							"host": [
+								"cardapi",
+								"zowibot",
+								"com"
+							],
+							"path": [
+								"api",
+								"v1",
+								"cards"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "recharge",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "telegram_user_id",
+								"value": "9",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"cardValue\": \"500\",\r\n    \"cardType\": \"Safaricom\",\r\n    \"phoneNumber\": \"0987654321\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://cardapi.zowibot.com/api/v1/cards/recharge",
+							"protocol": "https",
+							"host": [
+								"cardapi",
+								"zowibot",
+								"com"
+							],
+							"path": [
+								"api",
+								"v1",
+								"cards",
+								"recharge"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get all cards",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "telegram_user_id",
+								"value": "1",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "https://cardapi.zowibot.com/api/v1/cards?cardType=Safaricom",
+							"protocol": "https",
+							"host": [
+								"cardapi",
+								"zowibot",
+								"com"
+							],
+							"path": [
+								"api",
+								"v1",
+								"cards"
+							],
+							"query": [
+								{
+									"key": "cardType",
+									"value": "Safaricom"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "my-recharge-history",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "telegram_user_id",
+								"value": "9",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "https://cardapi.zowibot.com/api/v1/cards/my-recharge-history",
+							"protocol": "https",
+							"host": [
+								"cardapi",
+								"zowibot",
+								"com"
+							],
+							"path": [
+								"api",
+								"v1",
+								"cards",
+								"my-recharge-history"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "user",
+			"item": [
+				{
+					"name": "user",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"firstName\": \"Abdi\",\r\n    \"telegramUserId\": \"9\",\r\n    \"phoneNumber\": \"0917275901\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://cardapi.zowibot.com/api/v1/users",
+							"protocol": "https",
+							"host": [
+								"cardapi",
+								"zowibot",
+								"com"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "telegram_user_id",
+								"value": "2",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"firstName\": \"Abdi T\",\r\n    \"lastName\": \"Tiruneh\",\r\n    \"phoneNumber\": \"0917275901\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://cardapi.zowibot.com/api/v1/users",
+							"protocol": "https",
+							"host": [
+								"cardapi",
+								"zowibot",
+								"com"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "me",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "telegram_user_id",
+								"value": "9",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "https://cardapi.zowibot.com/api/v1/users/me",
+							"protocol": "https",
+							"host": [
+								"cardapi",
+								"zowibot",
+								"com"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"me"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "all users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "telegram_user_id",
+								"value": "1",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "https://cardapi.zowibot.com/api/v1/users",
+							"protocol": "https",
+							"host": [
+								"cardapi",
+								"zowibot",
+								"com"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
