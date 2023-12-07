@@ -81,11 +81,6 @@ def get_phone_number(update: Update, context: CallbackContext):
     # End the conversation
     return ConversationHandler.END
 
-
-
-
-
-
 def message_overtaken(update: Update, context: CallbackContext):
     global count, phoneNumber, cardType, cardValue # Add this line
     users = update.message.from_user
@@ -96,9 +91,7 @@ def message_overtaken(update: Update, context: CallbackContext):
         phoneNumber = str(update.message.text)
         if re.match(r'^\d{10}$', phoneNumber):
             context.user_data['phoneNumber'] = phoneNumber
-
             phoneNumber = phoneNumber
-            print(phoneNumber, "lasttttttttttttttttttttttttt")
             telegramUserId = str(update.effective_user.id)
 
             api_url = "https://cardapi.zowibot.com/api/v1/cards/recharge"
@@ -112,21 +105,30 @@ def message_overtaken(update: Update, context: CallbackContext):
             headers = { 'Content-Type': 'application/json', 
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
                'telegram_user_id': telegramUserId }
-            print(data,headers, "dddddddddddddddhhhhhhhhhhhh")
             try:
                 response = requests.post(api_url, json=data, headers=headers)
+                print(response.status_code, "code Status")
+                err = response.text
                 response.raise_for_status()
-                print(response.text)
-                print("response", response.json())
-                if response.status_code == 201:
+
+                if response.status_code == 200:
                     context.bot.send_message(
                         chat_id=update.effective_user.id,
-                        text="The phone is successfully charged!",
-                        reply_markup=main_menu()
+                        text="The phone is successfully charged!"
                     )
                     return ConversationHandler.END
+
+                elif response.status_code == 400 or response.status_code == 404:
+                    context.bot.send_message(
+                        chat_id=update.effective_user.id,
+                        text=f"{json.loads(err).get('message')}")
+                    return ConversationHandler.END
+
             except requests.exceptions.RequestException as e:
-                print(f"Error submitting phone number: {e}")
+                context.bot.send_message(
+                    chat_id=update.effective_user.id,
+                    text=f"{json.loads(err).get('message')}")
+                return ConversationHandler.END
 
         else:
             update.message.reply_text("Invalid phone number format. Please enter a 10-digit phone number.")
@@ -267,8 +269,8 @@ def message_handler(update: Update, context: CallbackContext):
                 reply_markup = InlineKeyboardMarkup(ethio_telecom_key)
                 update.message.reply_text("You Can select, the card amount you want to fill", reply_markup=reply_markup) 
                 
-                # return PHONE_NUMBER
-                return ConversationHandler.END
+                return PHONE_NUMBER
+                # return ConversationHandler.END
 
 
                 
@@ -291,20 +293,14 @@ def message_handler(update: Update, context: CallbackContext):
                 reply_markup = InlineKeyboardMarkup(safaricom_key)
                 update.message.reply_text("You Can select, the card amount you want  to fill", reply_markup=reply_markup)
                 
-                # return PHONE_NUMBER
-                return ConversationHandler.END
+                return PHONE_NUMBER
 
-                
-    elif text=='Ethio telecom Top Ups' or 'Safari com Top Ups' and  count == 0:
-        return message_overtaken(update, context)
-                
-                               
+                           
     elif text=="Account":
                         update.message.reply_text(text ="You can check Amount or Transfer your balance from Banks to this wallet", reply_markup=account_menu())
     elif text=="Help":
                         update.message.reply_text(text ="Coming Soon")
     
-    # return PHONE_NUMBER
                                             
 def main():
     updater = Updater(token="6796089767:AAGMhYGI9KCV2MEuFSNy3_T10DFiSHDvJGM", use_context=True)
@@ -313,12 +309,12 @@ def main():
     dp.add_handler(CommandHandler('start', start))
     dp.add_handler(CommandHandler("contact", main_menu))
     dp.add_handler(CallbackQueryHandler(handle_button_click))
-    dp.add_handler(MessageHandler(Filters.location | Filters.text, message_handler, pass_chat_data=True))
+    # dp.add_handler(MessageHandler(Filters.location | Filters.text, message_handler, pass_chat_data=True))
     
     conv_handler = ConversationHandler(
-    entry_points=[MessageHandler(Filters.text & ~Filters.command, message_overtaken)],
+    entry_points=[MessageHandler(Filters.text & ~Filters.command, message_handler)],
     states={
-        PHONE_NUMBER: [MessageHandler(Filters.text, message_handler)],
+        PHONE_NUMBER: [MessageHandler(Filters.text, message_overtaken)],
     },
     fallbacks=[],
     )
