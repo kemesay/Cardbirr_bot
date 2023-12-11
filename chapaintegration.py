@@ -50,6 +50,7 @@ def start_with_shipping_callback(update: Update, context: CallbackContext) -> No
         need_name=True,
         need_phone_number=True,
         need_email=True,
+        send_phone_number_to_provider=True,
         need_shipping_address=True,
         is_flexible=True,
     )
