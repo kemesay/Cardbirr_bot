@@ -137,8 +137,6 @@ def message_overtaken(update: Update, context: CallbackContext):
 
 
 
-
-
 # CONTACT_INFO_PROCESSED = False
 def contact_callback(update: Update, context: CallbackContext):
         global PHONE
@@ -210,7 +208,6 @@ def handle_button_click(update: Update, context: CallbackContext):
         cardValue= payload
         context.bot.send_message(chat_id=update.effective_user.id, text=f"You have selected {cardValue} Birr from {cardType}")
         context.bot.send_message(chat_id=update.effective_user.id, text="please enter the phone Number you want to charge")
-        print("yuuuuuuuuuuuuuuuuuuuuuuuuu", phoneNumber) 
         
        
     elif query.data == "Balance":
@@ -233,10 +230,7 @@ def handle_button_click(update: Update, context: CallbackContext):
                     
             except requests.exceptions.RequestException as e:
                 print(f"Error submitting phone number: {e}")
-                
-                
-                
-        
+                   
     elif query.data == "transfertowallet":
         context.bot.send_message(chat_id=update.effective_user.id, text=f"Mr/Mrs. {update.effective_user.first_name}")
         
