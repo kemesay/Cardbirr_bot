@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# pylint: disable=C0116,W0613
-# This program is dedicated to the public domain under the CC0 license.
-
-"""Basic example for a bot that can receive payment from user."""
-
 import logging
 
 from telegram import LabeledPrice, ShippingOption, Update
