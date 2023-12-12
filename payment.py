@@ -1,95 +1,82 @@
-import logging
-from telegram import LabeledPrice, ShippingOption, Update, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters, PreCheckoutQueryHandler, ShippingQueryHandler, CallbackContext, CallbackQueryHandler)
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler, CallbackQueryHandler, CallbackContext
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Define states for the first conversation
+FIRST, SECOND = range(2)
 
-def start_callback(update: Update, context: CallbackContext) -> None:
-    msg = ("Use /shipping to get an invoice for shipping-payment, or /noshipping for an " "invoice without shipping.")
-    update.message.reply_text(msg)
+# Define states for the second conversation (phone number)
+PHONE_NUMBER = range(1)
 
-def start_with_shipping_callback(update: Update, context: CallbackContext) -> None:
-    chat_id = update.message.chat_id
-    title = "Payment Example"
-    description = "Payment Example using python-telegram-bot"
-    payload = "Custom-Payload"
-    provider_token = "YOUR_PROVIDER_TOKEN"
-    currency = "ETB"
-    price = 1
-    prices = [LabeledPrice("Test", price * 100)]
-
-    keyboard = [[InlineKeyboardButton("Shipping", callback_data='shipping'),
-                 InlineKeyboardButton("No Shipping", callback_data='noshipping')]]
-
+# Function to start the first conversation
+def start(update: Update, context: CallbackContext) -> int:
+    keyboard = [[InlineKeyboardButton("Start First Conversation", callback_data='start_first')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
+    update.message.reply_text("Hi! Choose an option:", reply_markup=reply_markup)
+    return FIRST
 
-    update.message.reply_invoice(
-        title=title,
-        description=description,
-        payload=payload,
-        provider_token=provider_token,
-        currency=currency,
-        prices=prices,
-        need_name=True,
-        need_phone_number=True,
-        need_email=True,
-        need_shipping_address=True,
-        is_flexible=True,
-        reply_markup=reply_markup
-    )
+# Function for the first step in the first conversation
+def first_step(update: Update, context: CallbackContext) -> int:
+    update.message.reply_text("This is the first step. What's next?")
+    return SECOND
 
-def button_callback(update: Update, context: CallbackContext) -> None:
+# Function for the second step in the first conversation
+def second_step(update: Update, context: CallbackContext) -> int:
+    update.message.reply_text("This is the second step. First conversation completed.")
+    return ConversationHandler.END
+
+# Function to cancel the first conversation
+def cancel(update: Update, context: CallbackContext) -> int:
+    update.message.reply_text("First conversation cancelled.")
+    return ConversationHandler.END
+
+# Create the first ConversationHandler with states and corresponding functions
+first_conv_handler = ConversationHandler(
+    entry_points=[CommandHandler('start', start)],
+
+    states={
+        FIRST: [MessageHandler(Filters.text & ~Filters.command, first_step)],
+        SECOND: [MessageHandler(Filters.text & ~Filters.command, second_step)],
+    },
+
+    fallbacks=[CommandHandler('cancel', cancel)]
+)
+
+# Function to start the second conversation (phone number)
+def start_phone_number(update: Update, context: CallbackContext) -> int:
+    update.message.reply_text("Please send me your phone number.")
+    return PHONE_NUMBER
+
+# Function to handle the phone number input
+def phone_number_handler(update: Update, context: CallbackContext) -> int:
+    phone_number = update.message.text
+    update.message.reply_text(f"Phone number received: {phone_number}")
+    return ConversationHandler.END
+
+# Function to handle the inline keyboard button click
+def inline_button_callback(update: Update, context: CallbackContext) -> int:
     query = update.callback_query
-    chat_id = query.message.chat_id
-
-    if query.data == 'shipping':
-        # Handle shipping logic
-        options = [ShippingOption('1', 'Shipping Option A', [LabeledPrice('A', 100)])]
-        price_list = [LabeledPrice('B1', 150), LabeledPrice('B2', 200)]
-        options.append(ShippingOption('2', 'Shipping Option B', price_list))
-        context.bot.answer_shipping_query(query.id, ok=True, shipping_options=options)
-    elif query.data == 'noshipping':
-        # Handle no shipping logic
-        context.bot.send_invoice(
-            chat_id=chat_id,
-            title="Payment Example",
-            description="Payment Example using python-telegram-bot",
-            payload="Custom-Payload",
-            provider_token="YOUR_PROVIDER_TOKEN",
-            currency="ETB",
-            prices=[LabeledPrice("Test", 100)],
-            need_name=True,
-            need_phone_number=True,
-            need_email=True,
-            is_flexible=True
-        )
-    
     query.answer()
+    
+    if query.data == 'start_first':
+        return start_phone_number(update, context)
 
-def precheckout_callback(update: Update, context: CallbackContext) -> None:
-    query = update.pre_checkout_query
-    print(query)
+# Create the second ConversationHandler for phone number input
+phone_number_conv_handler = ConversationHandler(
+    entry_points=[CallbackQueryHandler(inline_button_callback)],
 
-    if query.invoice_payload != 'Custom-Payload':
-        query.answer(ok=False, error_message="Something went wrong...")
-    else:
-        query.answer(ok=True)
+    states={
+        PHONE_NUMBER: [MessageHandler(Filters.text & ~Filters.command, phone_number_handler)],
+    },
 
-def successful_payment_callback(update: Update, context: CallbackContext) -> None:
-    update.message.reply_text("Thank you for your payment!")
+    fallbacks=[CommandHandler('cancel', cancel)]
+)
 
-def main() -> None:
-    updater = Updater("YOUR_BOT_TOKEN")
-    dispatcher = updater.dispatcher
-    dispatcher.add_handler(CommandHandler("start", start_callback))
-    dispatcher.add_handler(CommandHandler("shipping", start_with_shipping_callback))
-    dispatcher.add_handler(CallbackQueryHandler(button_callback))
-    dispatcher.add_handler(ShippingQueryHandler(shipping_callback))
-    dispatcher.add_handler(PreCheckoutQueryHandler(precheckout_callback))
-    dispatcher.add_handler(MessageHandler(Filters.successful_payment, successful_payment_callback))
-    updater.start_polling()
-    updater.idle()
+# Set up the bot with both ConversationHandlers
+updater = Updater("6680224136:AAH95LjUiyLSC8PuyMy10jXxx4-op2i-teI", use_context=True)
+dp = updater.dispatcher
+dp.add_handler(first_conv_handler)
+dp.add_handler(phone_number_conv_handler)
 
-if __name__ == '__main__':
-    main()
+# Start the bot
+updater.start_polling()
+updater.idle()

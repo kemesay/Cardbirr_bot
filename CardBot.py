@@ -2,15 +2,15 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton,
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, CallbackContext, Updater, CommandHandler, MessageHandler, \
     Filters, ConversationHandler, CallbackQueryHandler
 import re
-
 import asyncio
 import logging
 import requests
 import time
 import json
 import threading
-
 PHONE_NUMBER = range(1)
+PHONE, AMOUNT = range(2)
+
 phoneNumber = ""
 CONTACT_INFO_PROCESSED = False
 cardValue =""
@@ -19,73 +19,40 @@ EthioTelecom = ""
 cardType = ""
 count=0
 dict_user = {}
-def spinning_win_button():
-                            btn = [
-                                [InlineKeyboardButton(text="Play Spining", callback_data="Playsw")],
-                            ]
-                            return InlineKeyboardMarkup(btn)
-def depo_button():
-                    btn = [
-                        [InlineKeyboardButton(text="Deposit", callback_data="transfer")],
-                    ]
-                    return InlineKeyboardMarkup(btn)
-                
-def userRegister():
-                    btn = [
-                        [InlineKeyboardButton(text="Register yourself", callback_data="registration")],
-                    ]
-                    return InlineKeyboardMarkup(btn)
 
+def service():
+                    main_keyboard = [
+                        [InlineKeyboardButton(text="09xxxxxxxx Ethiotelcom ", callback_data="phone"), 
+                        InlineKeyboardButton(text="07xxxxxxxx Safaricom", callback_data="amount"), 
+                                              ]
+                        ]
+                    return InlineKeyboardMarkup(main_keyboard)
 
 def main_menu():
                     main_keyboard = [
                         [KeyboardButton(text="Ethio telecom Top Ups"), KeyboardButton(text="Safari com Top Ups")],
-                        [KeyboardButton(text=" Account"), KeyboardButton(text="Help")]
+                        [KeyboardButton(text=" Ckeck Balance"), KeyboardButton(text="Transfer Banks to Wallet")],
+                         [KeyboardButton(text="Help")]
                     ]
                     return ReplyKeyboardMarkup(main_keyboard)
-
-def account_menu():
-                    main_keyboard = [
-                        [InlineKeyboardButton(text="Check your Balance", callback_data="Balance"), 
-                        InlineKeyboardButton(text="Transfer Banks to Wallet", callback_data="transfertowallet"), 
-                                                ]
-                        ]
-                    return InlineKeyboardMarkup(main_keyboard)
-                
-def recharge_menu():
-                    main_keyboard = [
-                        [InlineKeyboardButton(text="This phone", callback_data="thisphone"), 
-                        InlineKeyboardButton(text="Other phone", callback_data="otherphone"), 
-                                                ]
-                        ]
-                    return InlineKeyboardMarkup(main_keyboard)
-                
+                                
 def get_keyboard():
     reply_keyboard = [[ KeyboardButton(text='Are you agree to share your Phone Number', request_contact=True, id=1)]]
     return ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True)
-# Add a global flag to track whether contact information has been processed
 
 
 def get_phone_number(update: Update, context: CallbackContext):
     global cardType
-
-    # Retrieve the phone number from user input
     phone_number = update.message.text
-
-    # You can further process the phone number or use it as needed
     context.bot.send_message(chat_id=update.effective_user.id, text=f"Phone number: {phone_number}")
-
-    # Call the message_handler function to handle the message
     cardType = message_handler(update, context)
-
-    # End the conversation
     return ConversationHandler.END
+
 
 def message_overtaken(update: Update, context: CallbackContext):
     global count, phoneNumber, cardType, cardValue # Add this line
     users = update.message.from_user
     dict_user[users.id] = count
-    # print("text from overtaken message", update.message.text )
     if update.message.text == 'Ethio telecom Top Ups' or 'Safari com Top Ups':
         dict_user[users.id] = count+1
         phoneNumber = str(update.message.text)
@@ -93,14 +60,12 @@ def message_overtaken(update: Update, context: CallbackContext):
             context.user_data['phoneNumber'] = phoneNumber
             phoneNumber = phoneNumber
             telegramUserId = str(update.effective_user.id)
-
+            
             api_url = "https://cardapi.zowibot.com/api/v1/cards/recharge"
             data = {
-                
                 "cardValue": cardValue,
                 "cardType": cardType,
                 "phoneNumber": phoneNumber
-
             }
             headers = { 'Content-Type': 'application/json', 
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
@@ -117,38 +82,112 @@ def message_overtaken(update: Update, context: CallbackContext):
                         text="The phone is successfully charged!"
                     )
                     return ConversationHandler.END
-
                 elif response.status_code == 400 or response.status_code == 404:
                     context.bot.send_message(
                         chat_id=update.effective_user.id,
                         text=f"{json.loads(err).get('message')}")
                     return ConversationHandler.END
-
             except requests.exceptions.RequestException as e:
                 context.bot.send_message(
                     chat_id=update.effective_user.id,
                     text=f"{json.loads(err).get('message')}")
                 return ConversationHandler.END
-
         else:
             update.message.reply_text("Invalid phone number format. Please enter a 10-digit phone number.")
-        
     return PHONE_NUMBER
 
+def wallet_overtaken(update: Update, context: CallbackContext):
+    global count  # Add this line
+    users = update.message.from_user
+    dict_user[users.id] = count
+    if update.message.text == "Transfer Banks to Wallet":
+        dict_user[users.id] = count+1
+        context.bot.send_message(chat_id=update.effective_user.id, text="Great! Please enter your phone with 09******** or 07********")
+        return PHONE
+    
+def phone1(update: Update, context: CallbackContext):
+    global count  
+    users = update.message.from_user
+    dict_user[users.id] = count+2
+    context.user_data['phone'] = update.message.text
+    update.message.reply_text("please the amount you to transfer to your wallet")
+    return AMOUNT
+
+def send(update: Update, context: CallbackContext):
+    global count
+    users = update.message.from_user
+    del  dict_user[users.id]
+    data1 = {
+        'phone': context.user_data['phone'],
+        'amount': update.message.text
+    }
+
+    # Send feedback to your Spring Boot API
+    if send_phoAm(data1):
+        user = update.message.from_user
+        update.message.reply_text(f"Thank you for your charge with me, {user.first_name}! please check your balance")
+        return ConversationHandler.END
+
+def send_phoAm(feedback):
+    api_url = 'http://localhost:9010/feedback/giveFeedback'
+    headers = {'Content-Type': 'application/json'}
+    response = requests.post(api_url, json=feedback, headers=headers)
+
+def cancel(update: Update, context: CallbackContext) -> int:
+    update.message.reply_text("Conversation canceled.")
+    return ConversationHandler.END 
 
 
-# CONTACT_INFO_PROCESSED = False
+
+
+
+
+
+
+
+
+
+def button_callback(update: Update, context: CallbackContext):
+    query = update.callback_query
+    user_id = update.effective_user.id
+
+    if query.data == 'phone':
+        context.user_data['action'] = 'phone'
+        query.edit_message_text(text='Send me your phone number:')
+    elif query.data == 'email':
+        context.user_data['action'] = 'email'
+        query.edit_message_text(text='Send me your email address:')
+
+def handle_text(update, context):
+    user_id = update.effective_user.id
+    action = context.user_data.get('action')
+
+    if action == 'phone':
+        context.user_data['phone'] = update.message.text
+        context.user_data['action'] = 'email'
+        update.message.reply_text('Now, send me your email address:')
+    elif action == 'email':
+        context.user_data['email'] = update.message.text
+        # Send both phone number and email address to your API endpoint
+        # send_data_to_api(user_id, context.user_data['phone'], context.user_data['email'])
+        update.message.reply_text("Phone number and email address received successfully!")
+    else:
+        update.message.reply_text("Please use the inline buttons to choose an action.")
+
+
+
+
+
+
+
 def contact_callback(update: Update, context: CallbackContext):
         global PHONE
-    # if not CONTACT_INFO_PROCESSED:
         if update.message.contact:
             PHONE = update.message.contact.phone_number
             print(f"Phone number: {PHONE}")
-
             phoneNumber = PHONE
             telegramUserId = str(update.effective_user.id)
             firstName = update.effective_user.first_name
-
             api_url = "https://cardapi.zowibot.com/api/v1/users"
             data = {
                 'phoneNumber': phoneNumber,
@@ -168,14 +207,14 @@ def contact_callback(update: Update, context: CallbackContext):
                 print(f"Error submitting phone number: {e}")
         else:
             print("No contact information received.")
-    # else:
-    #     print("Contact information already processed.")
-
+            
 def start(update: Update, context: CallbackContext):
         context.bot.send_message(chat_id=update.effective_user.id,
                                  text=f"Hello Mr/Mrs. {update.effective_user.first_name} \n Welcome to the Card Birr Bot!", reply_markup=get_keyboard())
     
 list_button_click = ["5","10","15","20","25","50","100","500","1000"]
+
+list_service = ["ethio", "safari"]
 
 def card_type(update, context):
     text = update.message.text
@@ -194,10 +233,8 @@ def card_value(update, context):
     if payload in list_button_click:
       cardValue = payload
     return cardValue
-      
              
 def handle_button_click(update: Update, context: CallbackContext):
-    
     global cardValue, cardType, phoneNumber
     cardValue =  card_value(update, context)
     query = update.callback_query
@@ -208,43 +245,54 @@ def handle_button_click(update: Update, context: CallbackContext):
         cardValue= payload
         context.bot.send_message(chat_id=update.effective_user.id, text=f"You have selected {cardValue} Birr from {cardType}")
         context.bot.send_message(chat_id=update.effective_user.id, text="please enter the phone Number you want to charge")
-        
-       
-    elif query.data == "Balance":
-            telegramUserId = str(update.effective_user.id)
-            api_url = "https://cardapi.zowibot.com/api/v1/users/me"
+    elif payload in list_service:
+                context.bot.send_message(chat_id=update.effective_user.id, text="please enter the phone Number you want to charge")
 
-            headers = { 'Content-Type': 'application/json', 
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
-               'telegram_user_id': telegramUserId }
+    elif query.data == 'phone':
+        context.user_data['action'] = 'phone'
+        query.edit_message_text(text='Send me your phone number:')
+    elif query.data == 'amount':
+            context.user_data['action'] = 'amount'
+            query.edit_message_text(text='Send me Amount:')
             
-            try:
-                response = requests.get(api_url, headers=headers)
-                if response.status_code == 200:
-                    response = response.json()
-                    balance = response['Wallet']['balance']
-                    currency = response['Wallet']['currency']
-                    context.bot.send_message(chat_id=update.effective_user.id, text=f"Hello {update.effective_user.first_name} your current balance is  {balance} {currency}")
-                else:
-                    context.bot.send_message(chat_id=update.effective_user.id, text=f"Sorry {update.effective_user.first_name} try again later!")     
-                    
-            except requests.exceptions.RequestException as e:
-                print(f"Error submitting phone number: {e}")
-                   
-    elif query.data == "transfertowallet":
-        context.bot.send_message(chat_id=update.effective_user.id, text=f"Mr/Mrs. {update.effective_user.first_name}")
-        
-                                                     
+            
+            
+def send_data_to_api(user_id, phone, amount):
+    
+    api_trans = "https://cardapi.zowibot.com/api/v1/transactions"
+    data = {
+           "amount": amount,
+          "phoneNumber": phone
+         }
+    headers = { 'Content-Type': 'application/json', 
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
+               'telegram_user_id': user_id }
+    response = requests.post(api_trans, json=data, headers=headers)
+    rsponse = response.json()
+    print(response.json(), "stttttttttttttttttttttttttttttttttttttttttttttttttttt")
+    
 def message_handler(update: Update, context: CallbackContext):
+    global count
+    users = update.message.from_user
     global EthioTelecom, Safaricom, count, phoneNumber
     cardType = card_type(update, context)
-    print(cardType, "card type..................")
-    phoneNumber = str(update.message.text)
-    print(phoneNumber, "I am phone Numberrrrrrrrrrrrrrrrrrrrrr")
-
-    
+    user_id =  str(update.effective_user.id)
+    action = context.user_data.get('action')
     text = update.message.text              
-    if text=="Ethio telecom Top Ups":
+    phoneNumber = str(update.message.text)
+
+    if action == 'phone':
+        context.user_data['phone'] = update.message.text
+        context.user_data['action'] = 'amount'
+        update.message.reply_text('Now, send me amount:')
+    elif action == 'amount':
+        context.user_data['amount'] = update.message.text
+        send_data_to_api(user_id, context.user_data['phone'], context.user_data['amount'])
+
+        update.message.reply_text("Phone number and amount are received successfully!")
+
+        
+    elif text=="Ethio telecom Top Ups":
                 ethio_telecom_key = [ [InlineKeyboardButton(text="5 Birr", callback_data="5"), 
                                         InlineKeyboardButton(text="10 Birr", callback_data="10"), 
                                         InlineKeyboardButton(text="15 Birr", callback_data="15"),
@@ -262,12 +310,9 @@ def message_handler(update: Update, context: CallbackContext):
                                        ]
                 reply_markup = InlineKeyboardMarkup(ethio_telecom_key)
                 update.message.reply_text("You Can select, the card amount you want to fill", reply_markup=reply_markup) 
-                
                 return PHONE_NUMBER
                 # return ConversationHandler.END
 
-
-                
     elif text=="Safari com Top Ups":
                 safaricom_key =         [ [InlineKeyboardButton(text="5 Birr", callback_data="5"), 
                                         InlineKeyboardButton(text="10 Birr", callback_data="10"), 
@@ -286,18 +331,38 @@ def message_handler(update: Update, context: CallbackContext):
                                        ]
                 reply_markup = InlineKeyboardMarkup(safaricom_key)
                 update.message.reply_text("You Can select, the card amount you want  to fill", reply_markup=reply_markup)
-                
                 return PHONE_NUMBER
+            
+    elif text == "Ckeck Balance":
+            telegramUserId = str(update.effective_user.id)
+            api_url = "https://cardapi.zowibot.com/api/v1/users/me"
 
-                           
-    elif text=="Account":
-                        update.message.reply_text(text ="You can check Amount or Transfer your balance from Banks to this wallet", reply_markup=account_menu())
+            headers = { 'Content-Type': 'application/json', 
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
+               'telegram_user_id': telegramUserId }
+            try:
+                response = requests.get(api_url, headers=headers)
+                if response.status_code == 200:
+                    response = response.json()
+                    balance = response['Wallet']['balance']
+                    currency = response['Wallet']['currency']
+                    context.bot.send_message(chat_id=update.effective_user.id, text=f"Hello {update.effective_user.first_name} your current balance is  {balance} {currency}")
+                else:
+                    context.bot.send_message(chat_id=update.effective_user.id, text=f"Sorry {update.effective_user.first_name} try again later!")     
+                    
+            except requests.exceptions.RequestException as e:
+                print(f"Error submitting phone number: {e}")
+                
+    elif text=="Transfer Banks to Wallet":
+        
+        context.bot.send_message(chat_id=update.effective_user.id, text=f"{update.effective_user.first_name} select the service you want need", reply_markup=service())     
+
+
     elif text=="Help":
                         update.message.reply_text(text ="Coming Soon")
-    
-                                            
+                                                                     
 def main():
-    updater = Updater(token="6796089767:AAGMhYGI9KCV2MEuFSNy3_T10DFiSHDvJGM", use_context=True)
+    updater = Updater(token="6680224136:AAH95LjUiyLSC8PuyMy10jXxx4-op2i-teI", use_context=True)
     dp = updater.dispatcher
     dp.add_handler(MessageHandler(Filters.contact, contact_callback, pass_user_data=True))
     dp.add_handler(CommandHandler('start', start))
@@ -310,12 +375,20 @@ def main():
     states={
         PHONE_NUMBER: [MessageHandler(Filters.text, message_overtaken)],
     },
-    fallbacks=[],
-    )
+            fallbacks=[CommandHandler('cancel', cancel)],)  
 
     dp.add_handler(conv_handler)
     
+    conv_handler1 = ConversationHandler(
+    entry_points=[MessageHandler(Filters.text & ~Filters.command, wallet_overtaken)],
     
+    states={
+        PHONE: [MessageHandler(Filters.text & ~Filters.command, phone1)],
+        AMOUNT: [MessageHandler(Filters.text & ~Filters.command, send)]
+    },
+            fallbacks=[CommandHandler('cancel', cancel)],)  
+
+    dp.add_handler(conv_handler1)
     print('Polling...')
     updater.start_polling()
     dp.remove_handler(MessageHandler(Filters.contact, contact_callback, pass_user_data=True))

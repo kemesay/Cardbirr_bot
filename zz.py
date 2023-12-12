@@ -196,3 +196,50 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+      # elif query.data == "Balance":
+    #         telegramUserId = str(update.effective_user.id)
+    #         api_url = "https://cardapi.zowibot.com/api/v1/users/me"
+
+    #         headers = { 'Content-Type': 'application/json', 
+    #             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
+    #            'telegram_user_id': telegramUserId }
+    #         try:
+    #             response = requests.get(api_url, headers=headers)
+    #             if response.status_code == 200:
+    #                 response = response.json()
+    #                 balance = response['Wallet']['balance']
+    #                 currency = response['Wallet']['currency']
+    #                 context.bot.send_message(chat_id=update.effective_user.id, text=f"Hello {update.effective_user.first_name} your current balance is  {balance} {currency}")
+    #             else:
+    #                 context.bot.send_message(chat_id=update.effective_user.id, text=f"Sorry {update.effective_user.first_name} try again later!")     
+                    
+    #         except requests.exceptions.RequestException as e:
+    #             print(f"Error submitting phone number: {e}")
+    # elif query.data == "transfertowallet":
+    #     context.bot.send_message(chat_id=update.effective_user.id, text="Great! Please enter your phone with 09******** or 07********")
+    #     return PHONE
+        
+        
+        

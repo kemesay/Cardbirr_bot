@@ -41,7 +41,7 @@ def start_with_shipping_callback(update: Update, context: CallbackContext) -> No
     description = "Payment Example using python-telegram-bot"
     payload = "Custom-Payload"
     print(payload, "payload of the given one point")
-    provider_token = "6141645565:TEST:grFLuOeO5oJLe4oKNMGf"
+    provider_token = "5788067111:LIVE:X0MXiTjRlFeXjqouQkcr"
     currency = "ETB"
     price = 1
     prices = [LabeledPrice("Test", price * 100)]
@@ -56,17 +56,17 @@ def start_with_shipping_callback(update: Update, context: CallbackContext) -> No
         need_name=True,
         need_phone_number=True,
         need_email=True,
+        send_phone_number_to_provider=True,
         need_shipping_address=True,
         is_flexible=True,
     )
-
-
+    
 def start_without_shipping_callback(update: Update, context: CallbackContext) -> None:
     chat_id = update.message.chat_id
     title = "Payment Example"
     description = "Payment Example using python-telegram-bot"
     payload = "Custom-Payload"
-    provider_token = "6141645565:TEST:grFLuOeO5oJLe4oKNMGf"
+    provider_token = "5788067111:LIVE:X0MXiTjRlFeXjqouQkcr"
     currency = "ETB"
     price = 1
     prices = [LabeledPrice("Test", price * 100)]
