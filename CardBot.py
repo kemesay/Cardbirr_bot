@@ -22,9 +22,7 @@ dict_user = {}
 
 def service():
                     main_keyboard = [
-                        [InlineKeyboardButton(text="09xxxxxxxx Ethiotelcom ", callback_data="phone"), 
-                        InlineKeyboardButton(text="07xxxxxxxx Safaricom", callback_data="amount"), 
-                                              ]
+                        [InlineKeyboardButton(text="09xx..or 07xx.. service ", callback_data="start_phone")                                       ]
                         ]
                     return InlineKeyboardMarkup(main_keyboard)
 
@@ -96,88 +94,8 @@ def message_overtaken(update: Update, context: CallbackContext):
             update.message.reply_text("Invalid phone number format. Please enter a 10-digit phone number.")
     return PHONE_NUMBER
 
-def wallet_overtaken(update: Update, context: CallbackContext):
-    global count  # Add this line
-    users = update.message.from_user
-    dict_user[users.id] = count
-    if update.message.text == "Transfer Banks to Wallet":
-        dict_user[users.id] = count+1
-        context.bot.send_message(chat_id=update.effective_user.id, text="Great! Please enter your phone with 09******** or 07********")
-        return PHONE
+
     
-def phone1(update: Update, context: CallbackContext):
-    global count  
-    users = update.message.from_user
-    dict_user[users.id] = count+2
-    context.user_data['phone'] = update.message.text
-    update.message.reply_text("please the amount you to transfer to your wallet")
-    return AMOUNT
-
-def send(update: Update, context: CallbackContext):
-    global count
-    users = update.message.from_user
-    del  dict_user[users.id]
-    data1 = {
-        'phone': context.user_data['phone'],
-        'amount': update.message.text
-    }
-
-    # Send feedback to your Spring Boot API
-    if send_phoAm(data1):
-        user = update.message.from_user
-        update.message.reply_text(f"Thank you for your charge with me, {user.first_name}! please check your balance")
-        return ConversationHandler.END
-
-def send_phoAm(feedback):
-    api_url = 'http://localhost:9010/feedback/giveFeedback'
-    headers = {'Content-Type': 'application/json'}
-    response = requests.post(api_url, json=feedback, headers=headers)
-
-def cancel(update: Update, context: CallbackContext) -> int:
-    update.message.reply_text("Conversation canceled.")
-    return ConversationHandler.END 
-
-
-
-
-
-
-
-
-
-
-
-def button_callback(update: Update, context: CallbackContext):
-    query = update.callback_query
-    user_id = update.effective_user.id
-
-    if query.data == 'phone':
-        context.user_data['action'] = 'phone'
-        query.edit_message_text(text='Send me your phone number:')
-    elif query.data == 'email':
-        context.user_data['action'] = 'email'
-        query.edit_message_text(text='Send me your email address:')
-
-def handle_text(update, context):
-    user_id = update.effective_user.id
-    action = context.user_data.get('action')
-
-    if action == 'phone':
-        context.user_data['phone'] = update.message.text
-        context.user_data['action'] = 'email'
-        update.message.reply_text('Now, send me your email address:')
-    elif action == 'email':
-        context.user_data['email'] = update.message.text
-        # Send both phone number and email address to your API endpoint
-        # send_data_to_api(user_id, context.user_data['phone'], context.user_data['email'])
-        update.message.reply_text("Phone number and email address received successfully!")
-    else:
-        update.message.reply_text("Please use the inline buttons to choose an action.")
-
-
-
-
-
 
 
 def contact_callback(update: Update, context: CallbackContext):
@@ -208,6 +126,11 @@ def contact_callback(update: Update, context: CallbackContext):
         else:
             print("No contact information received.")
             
+def cancel(update: Update, context: CallbackContext) -> int:
+    update.message.reply_text("Conversation canceled.")
+    return ConversationHandler.END
+
+            
 def start(update: Update, context: CallbackContext):
         context.bot.send_message(chat_id=update.effective_user.id,
                                  text=f"Hello Mr/Mrs. {update.effective_user.first_name} \n Welcome to the Card Birr Bot!", reply_markup=get_keyboard())
@@ -233,6 +156,7 @@ def card_value(update, context):
     if payload in list_button_click:
       cardValue = payload
     return cardValue
+
              
 def handle_button_click(update: Update, context: CallbackContext):
     global cardValue, cardType, phoneNumber
@@ -248,12 +172,11 @@ def handle_button_click(update: Update, context: CallbackContext):
     elif payload in list_service:
                 context.bot.send_message(chat_id=update.effective_user.id, text="please enter the phone Number you want to charge")
 
-    elif query.data == 'phone':
-        context.user_data['action'] = 'phone'
+    elif query.data == 'start_phone':
+        context.user_data['action'] = 'input'
         query.edit_message_text(text='Send me your phone number:')
-    elif query.data == 'amount':
-            context.user_data['action'] = 'amount'
-            query.edit_message_text(text='Send me Amount:')
+        
+    
             
             
             
@@ -268,8 +191,7 @@ def send_data_to_api(user_id, phone, amount):
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
                'telegram_user_id': user_id }
     response = requests.post(api_trans, json=data, headers=headers)
-    rsponse = response.json()
-    print(response.json(), "stttttttttttttttttttttttttttttttttttttttttttttttttttt")
+    return response.json()
     
 def message_handler(update: Update, context: CallbackContext):
     global count
@@ -281,17 +203,21 @@ def message_handler(update: Update, context: CallbackContext):
     text = update.message.text              
     phoneNumber = str(update.message.text)
 
-    if action == 'phone':
-        context.user_data['phone'] = update.message.text
-        context.user_data['action'] = 'amount'
-        update.message.reply_text('Now, send me amount:')
-    elif action == 'amount':
-        context.user_data['amount'] = update.message.text
-        send_data_to_api(user_id, context.user_data['phone'], context.user_data['amount'])
+    if action == 'input':
+        if 'phone' not in context.user_data:
+            context.user_data['phone'] = update.message.text
+            update.message.reply_text('Now, send me the amount you want to transfer')
+        elif 'amount' not in context.user_data:
+            context.user_data['amount'] = update.message.text
+            response = send_data_to_api(user_id, context.user_data['phone'], context.user_data['amount'])
+            checkout_url = response.get('checkout_url')
+            
+            keyboard = [[InlineKeyboardButton("Checkout", url=checkout_url)]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            update.message.reply_text("Phone number and amount received successfully! Click 'Checkout' to proceed.", reply_markup=reply_markup)
+            context.user_data.clear()
 
-        update.message.reply_text("Phone number and amount are received successfully!")
 
-        
     elif text=="Ethio telecom Top Ups":
                 ethio_telecom_key = [ [InlineKeyboardButton(text="5 Birr", callback_data="5"), 
                                         InlineKeyboardButton(text="10 Birr", callback_data="10"), 
@@ -379,16 +305,6 @@ def main():
 
     dp.add_handler(conv_handler)
     
-    conv_handler1 = ConversationHandler(
-    entry_points=[MessageHandler(Filters.text & ~Filters.command, wallet_overtaken)],
-    
-    states={
-        PHONE: [MessageHandler(Filters.text & ~Filters.command, phone1)],
-        AMOUNT: [MessageHandler(Filters.text & ~Filters.command, send)]
-    },
-            fallbacks=[CommandHandler('cancel', cancel)],)  
-
-    dp.add_handler(conv_handler1)
     print('Polling...')
     updater.start_polling()
     dp.remove_handler(MessageHandler(Filters.contact, contact_callback, pass_user_data=True))

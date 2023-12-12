@@ -44,7 +44,7 @@ def handle_text(update, context):
     elif action == 'email':
         context.user_data['email'] = update.message.text
         # Send both phone number and email address to your API endpoint
-        # send_data_to_api(user_id, context.user_data['phone'], context.user_data['email'])
+        send_data_to_api(user_id, context.user_data['phone'], context.user_data['email'])
         update.message.reply_text("Phone number and email address received successfully!")
     else:
         update.message.reply_text("Please use the inline buttons to choose an action.")
@@ -54,7 +54,8 @@ def send_data_to_api(user_id, phone, email):
     import requests
 
     payload = {'user_id': user_id, 'phone': phone, 'email': email}
-    # response = requests.post(API_ENDPOINT, json=payload)
+    response = requests.post(API_ENDPOINT, json=payload)
+    response = response.json()
 
 def main():
     updater = Updater(TOKEN, use_context=True)
