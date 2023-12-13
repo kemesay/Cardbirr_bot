@@ -180,7 +180,7 @@ def handle_button_click(update: Update, context: CallbackContext):
             
             
             
-def send_data_to_api(user_id, phone, amount):
+def send_data_to_api(user_id, phone, amount, update, context):
     
     api_trans = "https://cardapi.zowibot.com/api/v1/transactions"
     data = {
@@ -191,7 +191,16 @@ def send_data_to_api(user_id, phone, amount):
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
                'telegram_user_id': user_id }
     response = requests.post(api_trans, json=data, headers=headers)
-    return response.json()
+    # print(response.text, "hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
+    err = response.text
+    if response.status_code == 200:
+    
+         return response.json()
+    else:
+        context.bot.send_message(
+                    chat_id=update.effective_user.id,
+                    text=f"{json.loads(err).get('message')}")
+        
     
 def message_handler(update: Update, context: CallbackContext):
     global count
@@ -205,11 +214,29 @@ def message_handler(update: Update, context: CallbackContext):
 
     if action == 'input':
         if 'phone' not in context.user_data:
-            context.user_data['phone'] = update.message.text
+            phone = update.message.text
+
+            # Validate phone number
+            if not (phone.isdigit() and len(phone) == 10):
+                update.message.reply_text("Please enter a valid 10-digit phone number.")
+                return
+            context.user_data['phone'] = phone
             update.message.reply_text('Now, send me the amount you want to transfer')
         elif 'amount' not in context.user_data:
-            context.user_data['amount'] = update.message.text
-            response = send_data_to_api(user_id, context.user_data['phone'], context.user_data['amount'])
+            amount = update.message.text
+
+            # Validate amount (integer, greater than $5)
+            try:
+                amount = float(amount)
+                if amount <= 5:
+                    update.message.reply_text("Please enter an amount greater than $5.")
+                    return
+            except ValueError:
+                update.message.reply_text("Please enter a valid numeric amount.")
+                return
+            context.user_data['amount'] = amount
+            
+            response = send_data_to_api(user_id, context.user_data['phone'], context.user_data['amount'], update, context)
             checkout_url = response.get('checkout_url')
             
             keyboard = [[InlineKeyboardButton("Checkout", url=checkout_url)]]
