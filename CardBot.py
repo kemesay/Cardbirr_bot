@@ -20,12 +20,16 @@ count=0
 dict_user = {}
 
 def main_menu():
-                    main_keyboard = [
+             main_keyboard = [
                         [KeyboardButton(text="Ethiotelecom Airtime TopUp "), KeyboardButton(text="Safaricom Airtime TopUp")],
-                        [KeyboardButton(text="Check your balance"), KeyboardButton(text="Transfer to the Cardbirr wallet")],
-                         [KeyboardButton(text="Help")]
-                    ]
-                    return ReplyKeyboardMarkup(main_keyboard)
+                        [KeyboardButton(text="Check your balance"), KeyboardButton(text="Bank deposit to your account")],
+                         [KeyboardButton(text="Contact Us"), KeyboardButton(text="Description")],
+                         ]
+                
+                    
+             return ReplyKeyboardMarkup(main_keyboard)
+                
+                
                                 
 def get_keyboard():
     reply_keyboard = [[ KeyboardButton(text='Do you agree to share your phone number?', request_contact=True, id=1)]]
@@ -55,15 +59,15 @@ def message_overtaken(update: Update, context: CallbackContext):
                'telegram_user_id': telegramUserId }
             try:
                 response = requests.post(api_url, json=data, headers=headers)
-                # print(response.status_code, "code Status")
+                print(response.json(), "check code")
                 err = response.text
-                response.raise_for_status()
-
+                
                 if response.status_code == 200:
-                    context.bot.send_message(
-                        chat_id=update.effective_user.id,
-                        text="phone number successfully charged"
-                    )
+                    respo = response.json()
+                    ussd_command = respo['command']
+                    response.raise_for_status()
+                    message_text = f"Click the link to charge your Safaricom phone: \n\n{ussd_command}"
+                    context.bot.send_message(chat_id=update.effective_user.id, text =f"{ussd_command}")
                     return ConversationHandler.END
                 elif response.status_code == 400 or response.status_code == 404:
                     context.bot.send_message(
@@ -77,6 +81,8 @@ def message_overtaken(update: Update, context: CallbackContext):
                 return ConversationHandler.END
         else:
             context.bot.send_message(chat_id=update.effective_user.id, text=f"Invalid phone number format. Please enter a 10-digit phone number.")
+            return
+            
         return PHONE_NUMBER
 
     
@@ -88,6 +94,7 @@ def contact_callback(update: Update, context: CallbackContext):
             telegramUserId = str(update.effective_user.id)
             firstName = update.effective_user.first_name
             api_url = "https://cardapi.zowibot.com/api/v1/users"
+            # print(telegramUserId)
             data = {
                 'phoneNumber': phoneNumber,
                 'telegramUserId': telegramUserId,
@@ -113,6 +120,9 @@ def cancel(update: Update, context: CallbackContext) -> int:
             
 def start(update: Update, context: CallbackContext):
         context.bot.send_message(chat_id=update.effective_user.id, text= "Welcome to the Card Birr Bot!", reply_markup=get_keyboard())
+
+def start1(update: Update, context: CallbackContext):
+        context.bot.send_message(chat_id=update.effective_user.id, text= "Cardbirr Successfully Restarted!", reply_markup=main_menu())
     
 list_button_click = ["5","10","15","25","50","100","500","1000"]
 
@@ -144,7 +154,7 @@ def handle_button_click(update: Update, context: CallbackContext):
     userId = update.effective_user.id
     if payload in list_button_click:
         cardValue= payload
-        context.bot.send_message(chat_id=update.effective_user.id, text=f"your card amount {cardValue} Birr, please enter phone number.")
+        context.bot.send_message(chat_id=update.effective_user.id, text=f"You selected {cardValue} Birr, please enter your phone number.")
         # context.bot.send_message(chat_id=update.effective_user.id, text="please enter phone Number")
     
               
@@ -161,12 +171,22 @@ def send_data_to_api(user_id, phone, amount, update, context):
     response = requests.post(api_trans, json=data, headers=headers)
     err = response.text
     if response.status_code == 200:
+        response = response.json()
+        checkout_url = response.get('checkout_url')
+            
+        keyboard = [[InlineKeyboardButton("Checkout", url=checkout_url)]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        context.bot.send_message(chat_id=update.effective_user.id,  text=f"Click 'Checkout' to complete payment on the web portal.", reply_markup=reply_markup)
     
-         return response.json()
+          
     else:
         context.bot.send_message(
                     chat_id=update.effective_user.id,
                     text=f"{json.loads(err).get('message')}")
+
+def timeout_callback(update, context):
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Conversation timed out. Please restart the process.")
+
         
     
 def message_handler(update: Update, context: CallbackContext):
@@ -179,43 +199,74 @@ def message_handler(update: Update, context: CallbackContext):
     text = update.message.text              
     phoneNumber = str(update.message.text)
     if text=="Ethiotelecom Airtime TopUp":
-                ethio_telecom_key = [ [InlineKeyboardButton(text="5 Birr", callback_data="5"), 
-                                        InlineKeyboardButton(text="10 Birr", callback_data="10"), 
-                                        InlineKeyboardButton(text="15 Birr", callback_data="15"),
-                                        ],
-                                        [
-                                        InlineKeyboardButton(text="25 Birr", callback_data="25"),
-                                        InlineKeyboardButton(text="50 Birr", callback_data="50"),
-                                        InlineKeyboardButton(text="100 Birr", callback_data="100"), 
+        
+                apifor= f'https://cardapi.zowibot.com/api/v1/cards/available-prices?cardType={cardType}'
+                
+                response = requests.get(apifor)
+             
+                if response.status_code == 200:
+                    available_prices = response.json()
+                    list_button_click = ["5", "10", "15", "25", "50", "100", "500", "1000"]
+                    if not available_prices:
+                        context.bot.send_message(chat_id=update.effective_user.id, text="Ethio telecom cards unavailable at the moment. Restocking shortly.")
+                        return
+                   
+                    else:
+                        list_button_click = [str(price) for price in available_prices]
+                        ethio_telecom_key = []
+                        row = []
+                        for price in list_button_click:
+                            button = InlineKeyboardButton(text=f"{price} Birr", callback_data=price)
+                            row.append(button)
+                            if len(row) == 3:
+                                ethio_telecom_key.append(row)
+                                row = []
 
-                                        ],
-                                         [
-                                        InlineKeyboardButton(text="500 Birr", callback_data="500"),
-                                        InlineKeyboardButton(text="1000 Birr", callback_data="1000")
-                                        ]
-                                       ]
-                reply_markup = InlineKeyboardMarkup(ethio_telecom_key)
-                context.bot.send_message(chat_id=update.effective_user.id, text=f"seleect card amount.", reply_markup=reply_markup) 
-                return PHONE_NUMBER
+                        if row:
+                            ethio_telecom_key.append(row)
+
+                        reply_markup = InlineKeyboardMarkup(ethio_telecom_key)
+
+                        context.bot.send_message(chat_id=update.effective_user.id, text=f"Select card amount", reply_markup=reply_markup)
+                        
+                else:
+                         context.bot.send_message(chat_id=update.effective_user.id, text=f"Failed to retrieve data. Status code: {response.status_code}")
+                         return
+                return PHONE_NUMBER 
 
     elif text=="Safaricom Airtime TopUp":
-                safaricom_key =         [ [InlineKeyboardButton(text="5 Birr", callback_data="5"), 
-                                        InlineKeyboardButton(text="10 Birr", callback_data="10"), 
-                                        InlineKeyboardButton(text="15 Birr", callback_data="15"),
-                                        ],
-                                        [
-                                        InlineKeyboardButton(text="25 Birr", callback_data="25"),
-                                        InlineKeyboardButton(text="50 Birr", callback_data="50"),
-                                        InlineKeyboardButton(text="100 Birr", callback_data="100"), 
+        
+                apifor= f'https://cardapi.zowibot.com/api/v1/cards/available-prices?cardType={cardType}'
+                
+                response = requests.get(apifor)
 
-                                        ],
-                                         [
-                                        InlineKeyboardButton(text="500 Birr", callback_data="500"),
-                                        InlineKeyboardButton(text="1000 Birr", callback_data="100")
-                                        ]
-                                       ]
-                reply_markup = InlineKeyboardMarkup(safaricom_key)
-                context.bot.send_message(chat_id=update.effective_user.id, text=f"seleect card amount", reply_markup=reply_markup)
+                if response.status_code == 200:
+                    available_prices = response.json()
+                    list_button_click = ["5", "10", "15", "25", "50", "100", "500", "1000"]
+                    if not available_prices:
+                        context.bot.send_message(chat_id=update.effective_user.id, text="Safaricom cards unavailable at the moment. Restocking shortly.")
+                        return
+                   
+                    else:
+                        list_button_click = [str(price) for price in available_prices]
+                        ethio_telecom_key = []
+                        row = []
+                        for price in list_button_click:
+                            button = InlineKeyboardButton(text=f"{price} Birr", callback_data=price)
+                            row.append(button)
+                            if len(row) == 3:
+                                ethio_telecom_key.append(row)
+                                row = []
+
+                        if row:
+                            ethio_telecom_key.append(row)
+
+                        reply_markup = InlineKeyboardMarkup(ethio_telecom_key)
+
+                        context.bot.send_message(chat_id=update.effective_user.id, text=f"Select card amount", reply_markup=reply_markup)
+                else:
+                     context.bot.send_message(chat_id=update.effective_user.id, text=f"Failed to retrieve data. Status code: {response.status_code}")
+                     return
                 return PHONE_NUMBER
             
     elif text == "Check your balance":
@@ -239,7 +290,7 @@ def message_handler(update: Update, context: CallbackContext):
                 context.bot.send_message(chat_id=update.effective_user.id, text=f"Error submitting phone number: {e}")
 
                 
-    elif text == "Transfer to the Cardbirr wallet":
+    elif text == "Bank deposit to your account":
             context.user_data['action'] = 'input_phone'
             context.bot.send_message(chat_id=update.effective_user.id, text=f'Please enter the phone number used for the transfer (e.g., 09xx xx xx xx or 07xx xx xx xx).')
     elif context.user_data.get('action') == 'input_phone':
@@ -254,8 +305,8 @@ def message_handler(update: Update, context: CallbackContext):
             amount = text
             try:
                 amount = float(amount)
-                if amount <= 5:
-                    context.bot.send_message(chat_id=update.effective_user.id, text=f"Please enter amount greater than 5 Birr.")
+                if amount < 5:
+                    context.bot.send_message(chat_id=update.effective_user.id, text=f"The minimum allowed amount is 5 Birr.")
                     return
             except ValueError:
                 context.bot.send_message(chat_id=update.effective_user.id, text=f"Please enter a valid numeric amount.")
@@ -264,22 +315,21 @@ def message_handler(update: Update, context: CallbackContext):
             context.user_data['amount'] = amount
             
             response = send_data_to_api(user_id, context.user_data['phone'], context.user_data['amount'], update, context)
-            checkout_url = response.get('checkout_url')
-            
-            keyboard = [[InlineKeyboardButton("Checkout", url=checkout_url)]]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            context.bot.send_message(chat_id=update.effective_user.id,  text=f"Click 'Checkout' to continue.", reply_markup=reply_markup)
             context.user_data.clear()
    
 
-    elif text=="Help":
+    elif text=="Contact Us":
+                        context.bot.send_message(chat_id=update.effective_user.id, text =f"Coming Soon")
+    elif text=="Description":
                         context.bot.send_message(chat_id=update.effective_user.id, text =f"Coming Soon")
                                                                      
 def main():
-    updater = Updater(token="6966499368:AAHLbmayBdrUz_XO5XAKA-zDga60c17v1oI", use_context=True)
+    updater = Updater(token="6709665712:AAE1c4WP68WJ4UzJsoGWPJlAmyYvmC9GnlE", use_context=True)
     dp = updater.dispatcher
     dp.add_handler(MessageHandler(Filters.contact, contact_callback, pass_user_data=True))
     dp.add_handler(CommandHandler('start', start))
+    dp.add_handler(CommandHandler('start1', start1))
+
     dp.add_handler(CommandHandler("contact", main_menu))
     dp.add_handler(CallbackQueryHandler(handle_button_click))
     # dp.add_handler(MessageHandler(Filters.location | Filters.text, message_handler, pass_chat_data=True))
@@ -289,7 +339,12 @@ def main():
     states={
         PHONE_NUMBER: [MessageHandler(Filters.text, message_overtaken)],
     },
-            fallbacks=[CommandHandler('cancel', cancel)],)  
+            fallbacks=[CommandHandler('cancel', cancel)],
+            
+            per_chat=True,  # Set to True if you want the timeout to be per chat
+            conversation_timeout=20,  # Set the timeout value in seconds
+
+            )  
 
     dp.add_handler(conv_handler)
     

@@ -1,32 +1,36 @@
-import socketio
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
 
-# Create a Socket.IO server
-sio = socketio.Server(cors_allowed_origins='*')
-app = socketio.WSGIApp(sio)
+# Define your callback function to handle the button press
+def button_callback(update, context):
+    query = update.callback_query
+    query.answer()
+    query.edit_message_text(text=f"Button pressed! Callback data: {query.data}")
 
-# Define a connection event handler
-@sio.event
-def connect(sid, environ):
-    print(f"Client {sid} connected")
+# Define the function to start the bot and set up the menu
+def start(update, context):
+    keyboard = [
+        [InlineKeyboardButton("Press me", callback_data='press_button')],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    update.message.reply_text('Welcome to the bot!', reply_markup=reply_markup)
 
-# Define a custom event handler for checkout
-@sio.event
-def checkout(sid, data):
-    print(f"Checkout event received from client {sid}")
-    user_id = data.get('user_id')
-    checkout_url = data.get('checkout_url')
+# Set up the main function
+def main():
+    # Set up the Telegram Bot with your token
+    updater = Updater(token='6709665712:AAE1c4WP68WJ4UzJsoGWPJlAmyYvmC9GnlE', use_context=True)
+    dp = updater.dispatcher
 
-    # Implement your actions with the checkout_url
-    print(f"User {user_id} is checking out with URL: {checkout_url}")
+    # Add a handler to respond to the /start command
+    dp.add_handler(CommandHandler("start", start))
 
-# Define a disconnect event handler
-@sio.event
-def disconnect(sid):
-    print(f"Client {sid} disconnected")
+    # Add a CallbackQueryHandler to handle button presses
+    dp.add_handler(CallbackQueryHandler(button_callback))
 
-# Run the Socket.IO server
+    # Start the bot
+    updater.start_polling()
+    updater.idle()
+
+# Run the bot
 if __name__ == '__main__':
-    import eventlet
-    import eventlet.wsgi
-
-    eventlet.wsgi.server(eventlet.listen(('localhost', 3000)), app)
+    main()
