@@ -19,6 +19,9 @@ cardType = ""
 count=0
 dict_user = {}
 
+cardbirr_support_bot_link = "https://t.me/Cardbirrsupport_bot"
+
+
 def main_menu():
              main_keyboard = [
                         [KeyboardButton(text="Ethiotelecom Airtime TopUp "), KeyboardButton(text="Safaricom Airtime TopUp")],
@@ -94,7 +97,7 @@ def contact_callback(update: Update, context: CallbackContext):
             telegramUserId = str(update.effective_user.id)
             firstName = update.effective_user.first_name
             api_url = "https://cardapi.zowibot.com/api/v1/users"
-            # print(telegramUserId)
+            print(phoneNumber, firstName)
             data = {
                 'phoneNumber': phoneNumber,
                 'telegramUserId': telegramUserId,
@@ -173,7 +176,6 @@ def send_data_to_api(user_id, phone, amount, update, context):
     if response.status_code == 200:
         response = response.json()
         checkout_url = response.get('checkout_url')
-            
         keyboard = [[InlineKeyboardButton("Checkout", url=checkout_url)]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         context.bot.send_message(chat_id=update.effective_user.id,  text=f"Click 'Checkout' to complete payment on the web portal.", reply_markup=reply_markup)
@@ -263,7 +265,7 @@ def message_handler(update: Update, context: CallbackContext):
 
                         reply_markup = InlineKeyboardMarkup(ethio_telecom_key)
 
-                        context.bot.send_message(chat_id=update.effective_user.id, text=f"Select card amount", reply_markup=reply_markup)
+                        context.bot.send_message(chat_id=update.effective_user.id, text=f"Select card amount", reply_markup=                                                        reply_markup)
                 else:
                      context.bot.send_message(chat_id=update.effective_user.id, text=f"Failed to retrieve data. Status code: {response.status_code}")
                      return
@@ -319,7 +321,12 @@ def message_handler(update: Update, context: CallbackContext):
    
 
     elif text=="Contact Us":
-                        context.bot.send_message(chat_id=update.effective_user.id, text =f"Coming Soon")
+                         user = update.message.from_user
+                         print(user)
+                         button = InlineKeyboardButton("Cardbirr Support Bot", url=cardbirr_support_bot_link)
+                         reply_markup = InlineKeyboardMarkup([[button]])
+                         context.bot.send_message(chat_id=update.effective_user.id, text =f"click button to get support", reply_markup=reply_markup)
+                         
     elif text=="Description":
                         context.bot.send_message(chat_id=update.effective_user.id, text =f"Coming Soon")
                                                                      
@@ -342,7 +349,7 @@ def main():
             fallbacks=[CommandHandler('cancel', cancel)],
             
             per_chat=True,  # Set to True if you want the timeout to be per chat
-            conversation_timeout=20,  # Set the timeout value in seconds
+            conversation_timeout=8,  # Set the timeout value in seconds
 
             )  
 
