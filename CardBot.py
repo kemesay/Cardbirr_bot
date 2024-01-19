@@ -122,6 +122,8 @@ def cancel(update: Update, context: CallbackContext) -> int:
 
             
 def start(update: Update, context: CallbackContext):
+        CHAT_ID = update.effective_user.id
+        print(CHAT_ID, "yyyyyyyyyyyyyyyyyyyyyy")
         context.bot.send_message(chat_id=update.effective_user.id, text= "Welcome to the Card Birr Bot!", reply_markup=get_keyboard())
 
 def start1(update: Update, context: CallbackContext):
@@ -265,7 +267,7 @@ def message_handler(update: Update, context: CallbackContext):
 
                         reply_markup = InlineKeyboardMarkup(ethio_telecom_key)
 
-                        context.bot.send_message(chat_id=update.effective_user.id, text=f"Select card amount", reply_markup=                                                        reply_markup)
+                        context.bot.send_message(chat_id=update.effective_user.id, text=f"Select card amount", reply_markup= reply_markup)
                 else:
                      context.bot.send_message(chat_id=update.effective_user.id, text=f"Failed to retrieve data. Status code: {response.status_code}")
                      return

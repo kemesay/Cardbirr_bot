@@ -1,13 +1,24 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, Location, ReplyKeyboardMarkup, Update, InputMediaPhoto
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, CallbackContext, Updater, CommandHandler, MessageHandler, \
     Filters, ConversationHandler, CallbackQueryHandler
+import telegram
+import schedule
 import re
 import asyncio
 import logging
 import requests
 import time
+from datetime import datetime
+import time
+from threading import Thread
+
 import json
 import threading
+
+BOT_TOKEN = '6709665712:AAE1c4WP68WJ4UzJsoGWPJlAmyYvmC9GnlE'
+# Create a bot instance
+bot = telegram.Bot(token=BOT_TOKEN)
+
 PHONE_NUMBER = range(1)
 PHONE, AMOUNT = range(2)
 phoneNumber = ""
@@ -17,7 +28,9 @@ Safaricom =""
 EthioTelecom = ""
 cardType = ""
 count=0
-dict_user = {}
+user_chat_ids = {}
+
+
 cardbirr_support_bot_link = "https://t.me/Cardbirrsupport_bot"
 def send_checkout_confirmation(user_id, context):
     context.bot.send_message(chat_id=user_id, text="After transaction, your balance update may take a moment.")
@@ -81,9 +94,49 @@ def cancel(update: Update, context: CallbackContext) -> int:
     return ConversationHandler.END
 
 def start(update: Update, context: CallbackContext):
+        global user_chat_ids
+        user_id = update.effective_user.id
+
+        user_chat_ids[user_id] = user_id  # Store the chat ID for future use
+
         context.bot.send_message(chat_id=update.effective_user.id, text= "Welcome to the Card Birr Bot!", reply_markup=get_keyboard())
+        
+
+
+
+def send_notification(user_id):
+    message = "Hello user, this is your Cardbirr Notification. Please use our service to get reward!"
+    bot.send_message(chat_id=user_id, text=message)
+
+def get_chat_id():
+    
+    # current_time = datetime.now().strftime("%H:%M")
+    # current_day = datetime.now().strftime("%A")
+
+    # if current_day.lower() == 'wednesday' and current_time == "04:49":
+     for user_id in user_chat_ids.values():
+        
+        send_notification(user_id)
+
+def scheduler_thread():
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
+
+# Schedule the get_chat_id function every minute
+# schedule.every(1).minutes.do(get_chat_id)
+# Schedule the get_chat_id function for Monday at 11:00
+schedule.every().wednesday.at("16:02").do(get_chat_id)
+
+
+
+
 
 def start1(update: Update, context: CallbackContext):
+        global user_chat_ids
+        user_id = update.effective_user.id
+        user_chat_ids[user_id] = user_id 
+         
         context.bot.send_message(chat_id=update.effective_user.id, text= "Cardbirr Successfully Restarted!", reply_markup=main_menu())
     
 list_button_click = ["5","10","15","25","50","100","500","1000"]
@@ -109,6 +162,11 @@ def card_value(update, context):
              
 def handle_button_click(update: Update, context: CallbackContext):
     global cardValue, cardType, phoneNumber
+    
+    global user_chat_ids
+    user_id = update.effective_user.id
+    user_chat_ids[user_id] = user_id  
+    
     # users = update.message.from_user
     cardValue =  card_value(update, context)
     query = update.callback_query
@@ -190,6 +248,11 @@ def timeout_callback(update, context):
         
     
 def message_handler(update: Update, context: CallbackContext):
+    
+    global user_chat_ids
+    user_id = update.effective_user.id
+    user_chat_ids[user_id] = user_id 
+    
     global count
     users = update.message.from_user
     global EthioTelecom, Safaricom, count, phoneNumber
@@ -336,11 +399,17 @@ def main():
     dp.add_handler(CommandHandler("contact", main_menu))
     dp.add_handler(CallbackQueryHandler(handle_button_click))
     dp.add_handler(MessageHandler(Filters.text & ~Filters.command, message_handler))
+    
+    print('Starting scheduler thread...')
+    scheduler = Thread(target=scheduler_thread)
+    scheduler.start()
    
     print('Polling...')
     updater.start_polling()
+    
     dp.remove_handler(MessageHandler(Filters.contact, contact_callback, pass_user_data=True))
     updater.idle()
+    
 
 if __name__ == "__main__":
     main()
